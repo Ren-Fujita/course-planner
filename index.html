@@ -13,6 +13,10 @@
 .slot-add{width:100%;background:transparent;border:1px dashed #d6e3dc;border-radius:5px;padding:6px 3px;font-size:10px;color:#729189;text-align:center;margin-top:4px}.slot-add:hover{background:#eaf4ee;color:#217b6c;border-color:#75ac9a}.record-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.lesson-wrap{border-radius:5px;margin-bottom:6px;overflow:hidden;border:1px solid #e1eae5}.lesson-wrap .lesson{margin:0;border-radius:0}.lesson-state-btn{width:100%;background:#f6faf7;padding:5px 4px;color:#4b8272;font-size:9px;text-align:center;border-top:1px solid #e0ebe5}.lesson-state-btn:hover{background:#dff0e7}.lesson-wrap.earned .lesson{background:#dff1e8;border-color:#2f9b73}.lesson-wrap.earned .lesson-state-btn{color:#237651;background:#edf8f1}.slot-dialog{width:min(620px,calc(100% - 28px))}
 @media(max-width:700px){.record-actions{flex-direction:column;align-items:flex-end;gap:4px}.record-actions .small-btn{font-size:10px;padding:4px 7px}}
 .catalog-item{border-bottom:1px solid var(--line)}.catalog-item .course-card{border-bottom:0;padding-bottom:6px}.catalog-actions{display:flex;justify-content:flex-end;gap:4px;padding-bottom:7px}.catalog-actions .link-btn{font-size:10px;padding:4px 6px}.catalog-actions{justify-content:space-between;gap:8px;padding-bottom:12px}.catalog-actions .btn{flex:1}.lesson-actions{display:flex;border-top:1px solid #dce8e1}.lesson-actions button{flex:1;background:#fff;padding:5px 2px;font-size:9px;color:#426f63}.lesson-actions button+button{border-left:1px solid #e1eae5;color:var(--red)}.lesson-actions button:hover{background:#eff6f2}.dialog-footer>.record-actions{flex:1}.plan-row>.delete-btn{display:none}.data-table .button-cell .btn{margin-top:3px;margin-bottom:3px}
+</style><style id="planningStyle">.on-demand-section{padding:18px 20px 20px;border-top:1px solid var(--line);background:#fafcfb}.on-demand-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px;margin-top:15px}.on-demand-list .lesson-wrap{margin:0;min-width:0;background:white}.on-demand-list .lesson{min-height:80px;padding:11px}.on-demand-list .lesson b{font-size:12px}.on-demand-empty{margin-top:13px;line-height:1.8}.required-controls{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--line);background:#f9fbfa}.required-controls .check-label{margin:0;color:var(--ink);font-size:12px}.required-controls .link-btn{margin-left:auto}.required-notice details{margin-top:6px}.required-notice summary{cursor:pointer}.required-issue{border-top:1px solid #e8d9b7;padding:8px 0}.required-issue p{font-size:11px}.required-issue .link-btn{color:#876023;text-align:left}.on-demand-section .row-split{align-items:flex-start}.on-demand-section h3{font-size:14px}
+@media(max-width:700px){.on-demand-section{padding:16px}.on-demand-list{grid-template-columns:1fr 1fr;gap:8px}.on-demand-list .lesson{padding:9px 7px}.on-demand-section .btn{white-space:nowrap}.required-controls{padding:12px 15px;gap:7px}.required-controls>.tiny{flex-basis:100%;font-size:10px}.required-controls .link-btn{margin-left:0}.required-notice{font-size:11px}}
+@media(max-width:360px){.on-demand-list{grid-template-columns:1fr}}
+@media print{.required-controls,.required-notice,.on-demand-section .btn,.on-demand-section .lesson-state-btn,.on-demand-section .lesson-actions{display:none!important}.on-demand-section{background:white}.on-demand-list{grid-template-columns:repeat(3,1fr)}.on-demand-section .lesson{display:block}}
 </style>
 <meta name="description" content="時間割・履修履歴・卒業要件を確認できる履修登録シミュレーター。端末内保存とオフライン起動に対応。">
 <meta name="theme-color" content="#173e49">
@@ -48,7 +52,7 @@ const normalize=s=>String(s||'').normalize('NFKC').replace(/[\s・、,（）()�
 const uniq=a=>[...new Set(a)];
 const sum=a=>a.reduce((s,x)=>s+x,0);
 const allocTerm=c=>c.allocation_raw.includes('Q1+Q2+Q3+Q4')||c.allocation_raw.includes('通')?'通年':c.allocation_raw.includes('Q1+Q2')?'前期':c.allocation_raw.includes('Q3+Q4')?'後期':c.allocation_raw.includes('Q')?(c.allocation_raw.match(/Q([1-4])/)?.[1]||'1')+'Q':c.allocation_raw.includes('前')?'前期':'後期';
-const initial=()=>({kind:'shunan-course-plan',version:1,cohort:2026,plans:[],history:[],programs:[],academicYears:{},graduationYear:2029,thesisSubmitted:false,thesisPassed:false,residenceConfirmed:false,customCourses:[],courseVersions:[],catalogSettings:{hideEarned:true,term:'',year:''},packs:[],updatedAt:null});
+const initial=()=>({kind:'shunan-course-plan',version:1,cohort:2026,plans:[],history:[],programs:[],academicYears:{},graduationYear:2029,thesisSubmitted:false,thesisPassed:false,residenceConfirmed:false,customCourses:[],courseVersions:[],catalogSettings:{hideEarned:true,term:'',year:''},requiredAutofill:{enabled:true,skipped:[]},packs:[],updatedAt:null});
 const minutes=t=>Number(t.split(':')[0])*60+Number(t.split(':')[1]);
 const overlaps=(a,b)=>a.date===b.date&&minutes(a.start)<minutes(b.end)&&minutes(b.start)<minutes(a.end);
 const validDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
@@ -91,6 +95,7 @@ function createEngine(data,config={}){
  }
  function findOffer(p,state){
   if(!p||!byId.has(p.courseId))return null;
+  if(p.requiredClassPending)return null;
   const choices=getOffers(byId.get(p.courseId),p.year,state),exact=choices.find(o=>o.id===p.offerId);
   if(exact)return exact;
   if(p.year<2027||p.sessions?.length)return null;
@@ -119,6 +124,14 @@ function createEngine(data,config={}){
   const events=[],pending=[];
   const add=(date,m)=>{const t=periods.find(x=>x.period===m.period);if(t)events.push({date,start:t.start,end:t.end,period:m.period,day:m.day,room:m.room_raw||'',source:o?.source?.includes('手入力')?'設定した曜限・学事暦':'T・C'});};
   if(p.sessions?.length)return {events:p.sessions.map(s=>({...s,source:'手入力'})),pending:['実施日時は手入力の情報です。'],manual:true};
+  if(!o&&p.requiredClassPending){
+   const choices=getOffers(courseFor(p.courseId,p.year,state),p.year,state);
+   if(choices.length){
+    const calendars=choices.map(offer=>calendarFor(offer,{...p,requiredClassPending:false},state));
+    const common=calendars[0].events.filter(event=>calendars.every(calendar=>calendar.events.some(other=>sessionKey(event)===sessionKey(other))));
+    return {events:dedup(common),pending:['開講クラスが未選択のため、全クラスに共通する実施日時だけで重複判定しています。']};
+   }
+  }
   if(!o)return {events:[],pending:['曜限は時間割に保存しています。実日付の情報が未設定です。']};
   if(o.sessions?.length)return {events:o.sessions.map(s=>({...s,source:'取込資料'})),pending:[]};
   if(o.delivery==='オンデマンド')return {events:[],pending:[]};
@@ -195,6 +208,7 @@ function createEngine(data,config={}){
   if(!c)return {errors:['科目が見つかりません。'],pending:[],notes:[],events:[]};
   if(!available(c.id,p.year,state))errors.push('この年度の科目一覧から削除されている科目です。');
   const o=findOffer(p,state), dd=details.get(normalize(c.name));
+  if(p.requiredClassPending)pending.push('複数の開講クラスがあります。所属クラスを選んでください。共通する曜限がある場合は仮置きしています。');
   const year=Number(state.academicYears[p.year]||Math.min(4,p.year-2025));
   const cs=courseConflicts(c),yearConflict=cs.some(x=>x.field==='年次');
   const minYear=minimumYear(c);
@@ -275,7 +289,39 @@ function createEngine(data,config={}){
   if(!Array.isArray(x.programs)||x.programs.some(p=>!['DS','IE','BA'].includes(p)))throw Error('プログラムが不正です。');
   if(!x.academicYears||Object.values(x.academicYears).some(y=>!Number.isInteger(y)||y<1||y>4)||!Number.isInteger(x.graduationYear)||x.graduationYear<2029||x.graduationYear>2040)throw Error('年次・卒業予定年度が不正です。');
   if(!x.catalogSettings||typeof x.catalogSettings.hideEarned!=='boolean'||!['',...TERMS].includes(x.catalogSettings.term)||!['','1','2','3','4'].includes(String(x.catalogSettings.year)))throw Error('検索設定が不正です。');
+  const autofill=x.requiredAutofill;
+  if(!autofill||typeof autofill.enabled!=='boolean'||!Array.isArray(autofill.skipped)||autofill.skipped.length>3000||autofill.skipped.some(key=>{if(typeof key!=='string')return true;const [year,id,...extra]=key.split(':');return extra.length||!/^\d{4}$/.test(year)||Number(year)<2026||Number(year)>2040||!known.has(id);}))throw Error('必修の自動追加設定が不正です。');
+  if(x.plans.some(p=>p.requiredClassPending!=null&&typeof p.requiredClassPending!=='boolean'))throw Error('開講クラスの選択状態が不正です。');
   x.packs.forEach(p=>validatePack(p,known,x));return syncTimeline(x);
+ }
+
+ function isRequired(c,state){return c.required_for_all||c.required_in_programs.some(program=>state.programs.includes(program));}
+
+ function autofillRequired(state,year){
+  const result={added:[],blocked:[]};
+  if(!state.requiredAutofill?.enabled)return result;
+  const grade=Number(state.academicYears[year]||Math.min(4,year-2025));
+  const skipped=new Set(state.requiredAutofill.skipped);
+  for(const c of catalogFor(year,state).filter(c=>isRequired(c,state)&&minimumYear(c)===grade)){
+   if(skipped.has(year+':'+c.id)||state.plans.some(p=>p.courseId===c.id)||state.history.some(h=>h.courseId===c.id))continue;
+   const choices=getOffers(c,year,state);
+   if(!choices.length){result.blocked.push({courseId:c.id,reasons:['開講情報が未設定です。科目情報で学期・曜限を設定してください。']});continue;}
+   const first=choices[0],multiple=choices.length>1;
+   // Keep only meetings shared by every class; never pick a class on the user's behalf.
+   const common=(first.meetings||[]).filter(m=>['月','火','水','木','金'].includes(m.day)&&choices.every(o=>o.term===first.term&&(o.meetings||[]).some(n=>n.day===m.day&&n.period===m.period))).map(m=>({day:m.day,period:m.period}));
+   let id='required-'+year+'-'+c.id;
+   while(state.plans.some(p=>p.id===id))id+='-auto';
+   const record={id,courseId:c.id,year,term:multiple?allocTerm(c):first.term,offerId:multiple?'':first.id,chosenPeriod:3,sessions:[],tentativeMeetings:multiple?common:[],remote:null};
+   if(multiple)record.requiredClassPending=true;
+   if(multiple){
+    const alternatives=choices.map(offer=>evaluate({...record,term:offer.term,offerId:offer.id,requiredClassPending:false},state));
+    if(alternatives.every(check=>check.errors.length)){result.blocked.push({courseId:c.id,reasons:uniq(alternatives.flatMap(check=>check.errors))});continue;}
+   }
+   const checked=evaluate(record,state);
+   if(checked.errors.length){result.blocked.push({courseId:c.id,reasons:checked.errors});continue;}
+   state.plans.push(record);setRecordStatus(state,record,'current');result.added.push(record);
+  }
+  return result;
  }
  function validatePack(x,known=byId,settings=config){
   if(!x||x.kind!=='shunan-schedule'||x.version!==1||!Number.isInteger(x.academicYear)||x.academicYear<2027||x.academicYear>2040||!x.source?.title||!Array.isArray(x.offerings)||!Array.isArray(x.calendar))throw Error('開講情報の形式が不正です。2027年度以降の指定形式を使用してください。');
@@ -317,7 +363,7 @@ function createEngine(data,config={}){
   const next={...state,customCourses:state.customCourses||[],courseVersions:(state.courseVersions||[]).filter(v=>!(v.courseId===id&&v.fromYear===fromYear)).concat({courseId:id,fromYear,deleted:true})};
   validateCustomizations(next);state.courseVersions=next.courseVersions;
  }
- return {data,courses,byId,byName,offers,courseFor,available,catalogFor,latestVersion,upsertCourse,deleteCourse,getOffers,findOffer,minimumYear,recordStatus,setRecordStatus,syncTimeline,calendarFor,evaluate,progress,cap,creditRange,courseConflicts,validateState,validatePack,initial,allocTerm,SEM,TERMS,overlaps,validSession,normalize,completedBefore};
+ return {data,courses,byId,byName,offers,courseFor,available,catalogFor,latestVersion,upsertCourse,deleteCourse,getOffers,findOffer,minimumYear,recordStatus,setRecordStatus,syncTimeline,calendarFor,evaluate,progress,cap,creditRange,courseConflicts,validateState,validatePack,initial,allocTerm,SEM,TERMS,overlaps,validSession,normalize,completedBefore,isRequired,autofillRequired};
 }
 root.Planner={createEngine,initial,overlaps,validSession,TERMS,allocTerm,SEM};
 if(typeof module!=='undefined')module.exports=root.Planner;
@@ -486,7 +532,7 @@ function recordTag(p){const s=E.recordStatus(p,state);return s==='earned'?'<span
 
 function earnedButton(p,compact=false){const earned=E.recordStatus(p,state)==='earned';return `<button class="${compact?'lesson-state-btn':'btn secondary small-btn'}" data-toggle-earned="${esc(p.id)}" aria-label="${esc(courseAt(p.courseId,p.year).name)}を${earned?'履修中に戻す':'修得済みにする'}">${earned?'✓ 修得済み（戻す）':'修得済みにする'}</button>`;}
 
-function planRow(p){const c=courseAt(p.courseId,p.year),r=evaluationFor(p),o=E.findOffer(p,state);return `<div class="plan-row"><span class="status-mark ${E.recordStatus(p,state)==='earned'?'checked':r.status}" aria-hidden="true"></span><div class="plan-title"><button data-edit="${esc(p.id)}">${esc(c.name)}</button><div class="small muted">${esc(p.term)} · ${esc(o?.label||'日時未確定')} · ${creditText(c)}</div></div><div class="record-actions">${recordTag(p)}${earnedButton(p)}<button class="btn secondary small-btn" data-edit-definition="${esc(p.id)}">科目編集</button><button class="btn danger small-btn" data-delete="${esc(p.id)}">削除</button></div></div>`;}
+function planRow(p){const c=courseAt(p.courseId,p.year),r=evaluationFor(p),o=E.findOffer(p,state);return `<div class="plan-row"><span class="status-mark ${E.recordStatus(p,state)==='earned'?'checked':r.status}" aria-hidden="true"></span><div class="plan-title"><button data-edit="${esc(p.id)}">${esc(c.name)}</button><div class="small muted">${esc(p.term)} · ${esc(p.requiredClassPending?'クラス未選択':o?.label||'日時未確定')} · ${creditText(c)}</div></div><div class="record-actions">${recordTag(p)}${earnedButton(p)}<button class="btn secondary small-btn" data-edit-definition="${esc(p.id)}">科目編集</button><button class="btn danger small-btn" data-delete="${esc(p.id)}">削除</button></div></div>`;}
 
 function safeUrl(s){try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?esc(u.href):'#';}catch{return '#';}}
 
@@ -508,11 +554,13 @@ function historyCourses(){return state.plans.map(p=>courseAt(p.courseId,p.year))
 function slotCandidates(){
  const year=academicYearFor(),q=E.normalize(slotModel.q);
  return E.catalogFor(ui.year,state).filter(c=>E.minimumYear(c)<=year&&E.normalize(c.name).includes(q)).flatMap(c=>{
-  const os=E.getOffers(c,ui.year,state),matches=os.filter(o=>compatible(o.term,ui.term)&&o.delivery!=='オンデマンド'&&o.meetings?.some(m=>m.day===slotModel.day&&m.period===slotModel.period));
+  const os=E.getOffers(c,ui.year,state),matches=os.filter(o=>compatible(o.term,ui.term)&&(slotModel.kind==='onDemand'?o.delivery==='オンデマンド':o.delivery!=='オンデマンド'&&o.meetings?.some(m=>m.day===slotModel.day&&m.period===slotModel.period)));
   if(matches.length)return matches.map(o=>({c,o}));
-  return ui.year>2026&&!os.length&&compatible(E.allocTerm(c),ui.term)?[{c,o:null}]:[];
+  return slotModel.kind!=='onDemand'&&ui.year>2026&&!os.length&&compatible(E.allocTerm(c),ui.term)?[{c,o:null}]:[];
  });
 }
+
+function onDemandPlans(){return visiblePlans().filter(p=>E.findOffer(p,state)?.delivery==='オンデマンド');}
 
 function catalogMatches(c){const os=E.getOffers(c,ui.year,state),q=E.normalize(ui.q);return (!ui.hideEarned||!state.history.some(h=>h.courseId===c.id&&h.status==='earned'))&&(!ui.filterYear||E.minimumYear(c)===Number(ui.filterYear))&&(!ui.filterTerm||(ui.filterTerm==='通年'?os.some(o=>o.term==='通年'):os.some(o=>compatible(o.term,ui.filterTerm))))&&(!q||E.normalize(c.name+' '+os.flatMap(o=>o.meetings?.map(m=>m.instructor_raw)||[]).join(' ')).includes(q))&&(!ui.category||(ui.category.startsWith('program:')?c.programs.includes(ui.category.split(':')[1]):c.category===ui.category))&&(!ui.delivery||(ui.delivery==='未確定'?os.every(o=>o.delivery==='未設定'):os.some(o=>o.delivery?.includes(ui.delivery))))&&(!ui.mandatory||c.required_for_all||c.required_in_programs.some(p=>state.programs.includes(p)))&&(!ui.termOnly||os.some(o=>compatible(o.term,ui.term)));}
 
@@ -529,6 +577,40 @@ function academicYearFor(year = ui.year) {
 }
 
 
+// Additions are delimited so the unchanged legacy UI can still be regression checked.
+function planningAddition(html){return '<!--planning-addition:start-->'+html+'<!--planning-addition:end-->';}
+
+function onDemandSection(){
+ const records=onDemandPlans();
+ return planningAddition(`<section class="on-demand-section" id="onDemandSection" aria-labelledby="onDemandTitle"><div class="row-split"><div><h3 id="onDemandTitle">オンデマンド</h3><p class="tiny muted">固定の曜日・時限なし · ${records.length}科目</p></div><button class="btn secondary small-btn" id="addOnDemand">＋ 授業を選ぶ</button></div>${records.length?`<div class="on-demand-list">${records.map(p=>{const c=courseAt(p.courseId,p.year),r=evaluationFor(p),status=E.recordStatus(p,state);return `<div class="lesson-wrap ${status==='earned'?'earned':''}"><button class="lesson ${courseColor(c)} ${r.errors.length&&status!=='earned'?'invalid':''}" data-edit="${esc(p.id)}"><b>${esc(c.name)}</b><span>${esc(p.term)} · ${creditText(c)}${E.isRequired(c,state)?' · 必修':''}</span><span>${status==='earned'?'✓ 修得済み':status==='failed'?'未修得':'履修中'}</span></button>${earnedButton(p,true)}<div class="lesson-actions"><button data-edit-definition="${esc(p.id)}">科目編集</button><button data-delete="${esc(p.id)}">削除</button></div></div>`;}).join('')}</div>`:'<p class="small muted on-demand-empty">「授業を選ぶ」から、この学期のオンデマンド授業を追加できます。</p>'}</section>`);
+}
+
+function openOnDemandSlot(){
+ slotModel={kind:'onDemand',q:''};
+ $('slotContent').innerHTML=`<div class="dialog-header"><div><div class="eyebrow">ON-DEMAND COURSES</div><h2 id="slotTitle">オンデマンド授業を選ぶ</h2><p class="small muted">${ui.year}年度 ${esc(ui.term)} · ${academicYearFor()}年次で履修できる科目</p></div><button class="delete-btn" id="closeSlot" aria-label="授業選択を閉じる">${icon('close')}</button></div><div class="dialog-body"><div class="search-wrap">${icon('search')}<input id="slotSearch" class="control" placeholder="科目名を検索" aria-label="オンデマンド科目を検索"></div><p class="info-line">曜日・時限の枠を使わない授業を選べます。登録後は下のオンデマンド欄から編集できます。</p><div class="row-split" style="margin:14px 0"><h3>選択できる授業</h3><span class="small muted" id="slotCount"></span></div><div id="slotChoices"></div></div>`;
+ renderSlotChoices();$('slotDialog').showModal();
+}
+
+function requiredControls(){
+ const skipped=state.requiredAutofill.skipped.some(key=>key.startsWith(ui.year+':'));
+ return planningAddition(`<div class="required-controls"><label class="check-label"><input id="autoRequiredEnabled" type="checkbox" ${state.requiredAutofill.enabled?'checked':''}>必修を自動追加</label><span class="tiny muted">全員必修・目標プログラムの必修を配当年次に合わせて配置します。</span>${skipped?'<button class="link-btn" id="restoreRequiredCourses">削除した必修を戻す</button>':''}</div>`);
+}
+
+function requiredNotice(result){
+ const blocked=result.blocked.filter(item=>compatible(E.allocTerm(courseAt(item.courseId)),ui.term));
+ const pending=visiblePlans().filter(p=>p.requiredClassPending);
+ if(!blocked.length&&!pending.length)return '';
+ return planningAddition(`<div class="notice amber required-notice"><div>${pending.length?`<p>${pending.length}科目の必修はクラス未選択です。時間割または科目一覧から開き、開講クラスを選んでください。</p>`:''}${blocked.length?`<details><summary>自動追加できない必修が${blocked.length}科目あります</summary>${blocked.map(item=>`<div class="required-issue"><button class="link-btn" data-course="${item.courseId}">${esc(courseAt(item.courseId).name)}</button><button class="link-btn" data-edit-catalog="${item.courseId}">開講情報を編集</button><p>${item.reasons.map(esc).join('<br>')}</p></div>`).join('')}</details>`:''}</div></div>`);
+}
+
+function ensureRequiredCourses(){
+ if(persistence.initializationFailed&&storageError)return {added:[],blocked:[]};
+ const result=E.autofillRequired(state,ui.year);
+ if(result.added.length)save();
+ return result;
+}
+
+
 // ui/timetable.js
 
 function stats(){const earned=E.progress(state),projected=E.progress(state,true),records=visiblePlans();const total=records.reduce((s,p)=>s+E.creditRange(courseAt(p.courseId,p.year)).min,0);const invalid=state.plans.filter(p=>E.recordStatus(p,state)!=='earned'&&evaluationFor(p).errors.length).length;return `<div class="stats"><div class="stat"><label>修得済み単位</label><strong>${earned.total}</strong><small>/ 124 単位</small><div class="stat-foot">計画は修得済みに含めません</div></div><div class="stat"><label>選択期間の時間割</label><strong>${total}</strong><small>単位</small><div class="stat-foot">${ui.year}年度 · ${esc(ui.term)}（CAPは半期ごと）</div></div><div class="stat"><label>卒業までの不足</label><strong>${Math.max(0,124-earned.total)}</strong><small>単位</small><div class="stat-foot">計画を含む見込み：${Math.max(0,124-projected.total)}単位</div></div><div class="stat"><label>計画の状態</label><strong>${invalid||state.plans.length}</strong><small>${invalid?'件 要修正':'科目 時間割に配置'}</small><div class="stat-foot">${state.plans.filter(p=>evaluationFor(p).pending.length).length}科目に未確定の情報があります</div></div></div>`;}
@@ -537,11 +619,11 @@ function semesterCapLine(){const half=E.SEM(ui.term);const recs=state.plans.filt
 
 function weekly(){
  const plans=visiblePlans(),days=['月','火','水','木','金'];let cells='';
- for(const time of DATA.class_periods){cells+=`<tr><td class="time-cell"><b>${time.period}限</b>${time.start}<br>${time.end}</td>`;for(const day of days){cells+='<td>';for(const p of plans){const c=courseAt(p.courseId,p.year),o=E.findOffer(p,state);let ms=o?.meetings||p.tentativeMeetings||[];if(o?.delivery==='オンデマンド')continue;if(o?.selection?.includes('または'))ms=ms.filter(m=>m.period===Number(p.chosenPeriod||3));if(ms.some(m=>m.day===day&&m.period===time.period)){const r=evaluationFor(p),status=E.recordStatus(p,state);cells+=`<div class="lesson-wrap ${status==='earned'?'earned':''}"><button class="lesson ${courseColor(c)} ${r.errors.length&&status!=='earned'?'invalid':''}" data-edit="${esc(p.id)}"><b>${esc(c.name)}</b><span>${esc(p.term)} · ${creditText(c)}</span><span>${status==='earned'?'✓ 修得済み':status==='current'?'履修中':status==='failed'?'未修得':!o?'設定した曜限':r.errors.length?'要修正':r.pending.length?'判定保留':'履修中'}</span></button>${earnedButton(p,true)}<div class="lesson-actions"><button data-edit-definition="${esc(p.id)}">科目編集</button><button data-delete="${esc(p.id)}">削除</button></div></div>`;}}cells+=`<button class="slot-add" data-slot-day="${day}" data-slot-period="${time.period}" aria-label="${day}曜${time.period}限の授業を選択">＋ 授業を選ぶ</button></td>`;}cells+='</tr>';}
+ for(const time of DATA.class_periods){cells+=`<tr><td class="time-cell"><b>${time.period}限</b>${time.start}<br>${time.end}</td>`;for(const day of days){cells+='<td>';for(const p of plans){const c=courseAt(p.courseId,p.year),o=E.findOffer(p,state);let ms=o?.meetings||p.tentativeMeetings||[];if(o?.delivery==='オンデマンド')continue;if(o?.selection?.includes('または'))ms=ms.filter(m=>m.period===Number(p.chosenPeriod||3));if(ms.some(m=>m.day===day&&m.period===time.period)){const r=evaluationFor(p),status=E.recordStatus(p,state);cells+=`<div class="lesson-wrap ${status==='earned'?'earned':''}"><button class="lesson ${courseColor(c)} ${r.errors.length&&status!=='earned'?'invalid':''}" data-edit="${esc(p.id)}"><b>${esc(c.name)}</b><span>${esc(p.term)} · ${creditText(c)}</span><span>${status==='earned'?'✓ 修得済み':p.requiredClassPending?'クラス未選択':status==='current'?'履修中':status==='failed'?'未修得':!o?'設定した曜限':r.errors.length?'要修正':r.pending.length?'判定保留':'履修中'}</span></button>${earnedButton(p,true)}<div class="lesson-actions"><button data-edit-definition="${esc(p.id)}">科目編集</button><button data-delete="${esc(p.id)}">削除</button></div></div>`;}}cells+=`<button class="slot-add" data-slot-day="${day}" data-slot-period="${time.period}" aria-label="${day}曜${time.period}限の授業を選択">＋ 授業を選ぶ</button></td>`;}cells+='</tr>';}
  return `<div class="weekly-scroll"><table class="weekly" aria-label="通常授業の参考時間割"><thead><tr><th>時限</th>${days.map(d=>`<th>${d}曜日</th>`).join('')}</tr></thead><tbody>${cells}</tbody></table></div><div class="legend"><span><i></i>枠の「授業を選ぶ」から追加できます。重複は実日付で判定します。</span></div>`;
 }
 
-function renderSlotChoices(){const choices=slotCandidates();$('slotCount').textContent=choices.length+'件';$('slotChoices').innerHTML=choices.map(({c,o})=>`<button class="course-card" data-slot-course="${c.id}" data-slot-offer="${esc(o?.id||'')}" ${Boolean(planByCourse(c.id))?'disabled title="時間割に登録済みです"':''}><div class="tags"><span class="badge">${E.minimumYear(c)}年次以降</span>${o?`<span class="badge">${esc(o.term)}</span>`:'<span class="badge amber">設定した曜限</span>'}${Boolean(planByCourse(c.id))?'<span class="badge blue">登録済み・追加不可</span>':''}</div><b>${esc(c.name)}</b><div class="course-bottom"><span>${esc(o?.label||'開講クラス未公表')} · ${creditText(c)}</span><span class="plus">＋</span></div></button>`).join('')||empty('この枠に該当する授業はありません','別の曜日・時限・学期を選ぶか、科目一覧から追加してください。','search');}
+function renderSlotChoices(){const choices=slotCandidates();$('slotCount').textContent=choices.length+'件';$('slotChoices').innerHTML=choices.map(({c,o})=>`<button class="course-card" data-slot-course="${c.id}" data-slot-offer="${esc(o?.id||'')}" ${Boolean(planByCourse(c.id))?'disabled title="時間割に登録済みです"':''}><div class="tags"><span class="badge">${E.minimumYear(c)}年次以降</span>${o?`<span class="badge">${esc(o.term)}</span>`:'<span class="badge amber">設定した曜限</span>'}${Boolean(planByCourse(c.id))?'<span class="badge blue">登録済み・追加不可</span>':''}</div><b>${esc(c.name)}</b><div class="course-bottom"><span>${esc(o?.label||'開講クラス未公表')} · ${creditText(c)}</span><span class="plus">＋</span></div></button>`).join('')||empty(slotModel.kind==='onDemand'?'この学期に該当するオンデマンド授業はありません':'この枠に該当する授業はありません','別の学期を選ぶか、科目管理で授業形態・開講学期を確認してください。','search');}
 
 function openSlot(day,period){slotModel={day,period,q:''};$('slotContent').innerHTML=`<div class="dialog-header"><div><div class="eyebrow">CHOOSE A COURSE</div><h2 id="slotTitle">${day}曜${period}限の授業を選ぶ</h2><p class="small muted">${ui.year}年度 ${esc(ui.term)} · ${academicYearFor()}年次で履修できる科目</p></div><button class="delete-btn" id="closeSlot" aria-label="授業選択を閉じる">${icon('close')}</button></div><div class="dialog-body"><div class="search-wrap">${icon('search')}<input id="slotSearch" class="control" placeholder="科目名を検索" aria-label="この枠の科目を検索"></div><p class="info-line">${ui.year>2026?'この年度の時間割設定に基づいて配置します。科目や曜限は編集できます。':'この曜日・時限に掲載されたクラスを選べます。複数曜限の授業はすべての枠に配置されます。'}</p><div class="row-split" style="margin:14px 0"><h3>選択できる授業</h3><span class="small muted" id="slotCount"></span></div><div id="slotChoices"></div></div>`;renderSlotChoices();$('slotDialog').showModal();}
 
@@ -552,8 +634,9 @@ function dateCalendar(){
 }
 
 function renderPlan(){
- beginRender();
- $('main').innerHTML=header('履修計画','一つずつ選んで、卒業までの道筋をつくる。')+stats()+`<div class="workspace"><div><div class="notice ${ui.year>2026?'amber':''}">${icon('info')}<div>${ui.year>2026?`<strong>${ui.year}年度の履修計画です。</strong> 2026年度の科目・曜限を初期値にし、変更内容を年度別に編集できます。`:'<strong>2026年度の時間割・学事暦を収録しています。</strong> 科目詳細で根拠と未確定事項を確認できます。'}<br>標準CAP：半期24単位・年間48単位。承認例外と通年算入は要確認です。</div></div><section class="panel"><div class="panel-head"><div><h2>時間割</h2><span class="tiny muted">${semesterCapLine()}</span></div><div class="segment"><button data-calendar="week" class="${ui.calendar==='week'?'selected':''}">週表示</button><button data-calendar="date" class="${ui.calendar==='date'?'selected':''}">実日付</button></div></div><div class="toolbar"><div class="controls"><label class="field">年度<select id="planYear" class="control">${yearOptions(ui.year)}</select></label><label class="field">学期<select id="planTerm" class="control term-select">${termOptions(ui.term)}</select></label><label class="field">表示する年次<select class="control" id="academicYear">${displayYearOptions()}</select></label></div></div>${ui.calendar==='week'?weekly():dateCalendar()}${!visiblePlans().length?empty('この期間の計画はまだありません','科目一覧から、気になる授業を追加してください。'):''}</section><section class="panel section-gap"><div class="panel-head"><h2>この期間の科目</h2><span class="badge">${visiblePlans().length} 科目</span></div><div class="plan-items">${visiblePlans().map(planRow).join('')||'<p class="small muted" style="padding-top:15px">オンデマンド・集中講義もここに表示されます。</p>'}</div></section><p class="info-line">年次と年度は連動します。1年次は2026年度、2年次は2027年度です。切り替えても前の年度の登録科目は保存されます。下位年次配当の科目も、その年次の計画に追加できます。</p></div><aside class="panel right-panel"><div class="panel-head"><h2>科目を探す</h2><span class="tiny muted" id="catalogCount">127科目</span></div><div class="panel-body" style="padding-bottom:10px"><div class="search-wrap">${icon('search')}<input id="courseSearch" class="control" placeholder="科目名・担当教員を検索" aria-label="科目を検索" value="${esc(ui.q)}"></div><div class="catalog-filters"><select id="categoryFilter" class="control" aria-label="科目区分"><option value="">すべての区分</option>${["DS","IE","BA"].map(pr=>`<option value="program:${pr}" ${ui.category==="program:"+pr?"selected":""}>${pr}認定科目</option>`).join("")}${[...new Set(E.courses.map(c=>c.category))].map(k=>`<option ${ui.category===k?'selected':''}>${k}</option>`).join('')}</select><select id="mandatoryFilter" class="control" aria-label="必修の絞り込み"><option value="">すべての科目</option><option value="required" ${ui.mandatory?'selected':''}>必修・目標プログラム必修</option></select></div><label class="field" style="margin-top:9px">授業形態<select id="deliveryFilter" class="control" aria-label="授業形態"><option value="">すべての授業形態</option>${["対面","オンライン","オンデマンド","ハイフレックス","未確定"].map(v=>`<option ${ui.delivery===v?"selected":""}>${v}</option>`).join("")}</select></label>${catalogControls()}<label class="check-label"><input id="termOnly" type="checkbox" ${ui.termOnly?'checked':''}>選択中の学期に開講する科目だけ</label></div><div class="course-list" id="courseList"></div><div style="text-align:center;padding:12px"><button id="moreCourses" class="link-btn">さらに表示</button></div></aside></div>`+footer();renderCatalog();
+ const requiredResult=ensureRequiredCourses();
+ beginRender();updateSide();
+ $('main').innerHTML=header('履修計画','一つずつ選んで、卒業までの道筋をつくる。')+stats()+`<div class="workspace"><div><div class="notice ${ui.year>2026?'amber':''}">${icon('info')}<div>${ui.year>2026?`<strong>${ui.year}年度の履修計画です。</strong> 2026年度の科目・曜限を初期値にし、変更内容を年度別に編集できます。`:'<strong>2026年度の時間割・学事暦を収録しています。</strong> 科目詳細で根拠と未確定事項を確認できます。'}<br>標準CAP：半期24単位・年間48単位。承認例外と通年算入は要確認です。</div></div>${requiredNotice(requiredResult)}<section class="panel"><div class="panel-head"><div><h2>時間割</h2><span class="tiny muted">${semesterCapLine()}</span></div><div class="segment"><button data-calendar="week" class="${ui.calendar==='week'?'selected':''}">週表示</button><button data-calendar="date" class="${ui.calendar==='date'?'selected':''}">実日付</button></div></div><div class="toolbar"><div class="controls"><label class="field">年度<select id="planYear" class="control">${yearOptions(ui.year)}</select></label><label class="field">学期<select id="planTerm" class="control term-select">${termOptions(ui.term)}</select></label><label class="field">表示する年次<select class="control" id="academicYear">${displayYearOptions()}</select></label></div></div>${requiredControls()}${ui.calendar==='week'?weekly():dateCalendar()}${onDemandSection()}${!visiblePlans().length?empty('この期間の計画はまだありません','科目一覧から、気になる授業を追加してください。'):''}</section><section class="panel section-gap"><div class="panel-head"><h2>この期間の科目</h2><span class="badge">${visiblePlans().length} 科目</span></div><div class="plan-items">${visiblePlans().map(planRow).join('')||'<p class="small muted" style="padding-top:15px">オンデマンド・集中講義もここに表示されます。</p>'}</div></section><p class="info-line">年次と年度は連動します。1年次は2026年度、2年次は2027年度です。切り替えても前の年度の登録科目は保存されます。下位年次配当の科目も、その年次の計画に追加できます。</p></div><aside class="panel right-panel"><div class="panel-head"><h2>科目を探す</h2><span class="tiny muted" id="catalogCount">127科目</span></div><div class="panel-body" style="padding-bottom:10px"><div class="search-wrap">${icon('search')}<input id="courseSearch" class="control" placeholder="科目名・担当教員を検索" aria-label="科目を検索" value="${esc(ui.q)}"></div><div class="catalog-filters"><select id="categoryFilter" class="control" aria-label="科目区分"><option value="">すべての区分</option>${["DS","IE","BA"].map(pr=>`<option value="program:${pr}" ${ui.category==="program:"+pr?"selected":""}>${pr}認定科目</option>`).join("")}${[...new Set(E.courses.map(c=>c.category))].map(k=>`<option ${ui.category===k?'selected':''}>${k}</option>`).join('')}</select><select id="mandatoryFilter" class="control" aria-label="必修の絞り込み"><option value="">すべての科目</option><option value="required" ${ui.mandatory?'selected':''}>必修・目標プログラム必修</option></select></div><label class="field" style="margin-top:9px">授業形態<select id="deliveryFilter" class="control" aria-label="授業形態"><option value="">すべての授業形態</option>${["対面","オンライン","オンデマンド","ハイフレックス","未確定"].map(v=>`<option ${ui.delivery===v?"selected":""}>${v}</option>`).join("")}</select></label>${catalogControls()}<label class="check-label"><input id="termOnly" type="checkbox" ${ui.termOnly?'checked':''}>選択中の学期に開講する科目だけ</label></div><div class="course-list" id="courseList"></div><div style="text-align:center;padding:12px"><button id="moreCourses" class="link-btn">さらに表示</button></div></aside></div>`+footer();renderCatalog();
 }
 
 function renderRoadmap(){
@@ -621,7 +704,7 @@ function openCourse(id,mode='plan',planId=null,slot=null){
  if(mode==='plan'&&!planId&&existing){toast('この科目は時間割に登録済みです。変更する場合は時間割の科目を選んでください。',true);return;}
  if(mode==='history'&&!existing){toast('先に時間割へ科目を追加してください。',true);return;}
  const os=E.getOffers(c,ui.year,state);const chosen=existing?E.findOffer(existing,state):slot?.offerId?os.find(o=>o.id===slot.offerId):os.find(o=>compatible(o.term,ui.term))||os[0];
- dialogModel={courseId:id,mode,id:existing?.id||uid(),year:existing?.year||ui.year,term:existing?.term||chosen?.term||E.allocTerm(c),offerId:chosen?.id||existing?.offerId||'',chosenPeriod:existing?.chosenPeriod||slot?.period||3,sessions:existing?.sessions||[],tentativeMeetings:existing?.tentativeMeetings||(slot?.tentative?[{day:slot.day,period:slot.period}]:[]),remote:existing?.remote??null,status:existing?E.recordStatus(existing,state):'current'};
+ dialogModel={courseId:id,mode,id:existing?.id||uid(),year:existing?.year||ui.year,term:existing?.term||chosen?.term||E.allocTerm(c),offerId:chosen?.id||existing?.offerId||'',chosenPeriod:existing?.chosenPeriod||slot?.period||3,sessions:existing?.sessions||[],tentativeMeetings:existing?.tentativeMeetings||(slot?.tentative?[{day:slot.day,period:slot.period}]:[]),remote:existing?.remote??null,status:existing?E.recordStatus(existing,state):'current',...(existing?.requiredClassPending?{requiredClassPending:true}:{})};
  renderDialog();$('courseDialog').showModal();
 }
 
@@ -630,7 +713,7 @@ function renderDialog(){
  $('dialogContent').innerHTML=`<div class="dialog-header"><div><div class="eyebrow">${m.mode==='history'?'COURSE HISTORY':'COURSE DETAILS'}</div><h2 id="dialogTitle" style="margin-top:6px">${esc(c.name)}</h2><div class="tags" style="margin-top:9px"><span class="badge">${creditText(c)}</span><span class="badge">${esc(c.category)}</span>${c.required_for_all?'<span class="badge green">必修</span>':''}${c.programs.map(p=>`<span class="badge blue">${p}</span>`).join('')}</div></div><button class="delete-btn" id="closeCourse" aria-label="閉じる">${icon('close')}</button></div><div class="dialog-body"><div class="dialog-grid"><label class="field">年度<select id="dYear" class="control">${yearOptions(m.year)}</select></label><label class="field">学期<select id="dTerm" class="control">${termOptions(m.term)}</select></label><label class="field">履修状態<select id="dStatus" class="control">${[['current','履修中'],['earned','修得済み'],['failed','未修得']].map(([v,l])=>`<option value="${v}" ${m.status===v?'selected':''}>${l}</option>`).join('')}</select></label><label class="field dialog-full">開講クラス<select class="control" id="dOffer"><option value="">曜限を個別に設定</option>${os.map(x=>`<option value="${esc(x.id)}" ${x.id===m.offerId?'selected':''}>${esc(x.label)} · ${esc(x.term)} · ${esc(x.delivery||'形態未確認')}</option>`).join('')}</select></label>${o?.selection?.includes('または')?`<label class="field dialog-full">出席する時限<select id="dPeriod" class="control"><option value="3" ${Number(m.chosenPeriod)===3?'selected':''}>金曜3限</option><option value="4" ${Number(m.chosenPeriod)===4?'selected':''}>金曜4限</option></select></label>`:''}<label class="field dialog-full">遠隔授業60単位上限の対象<select id="dRemote" class="control"><option value="unknown" ${m.remote==null?'selected':''}>未確認</option><option value="yes" ${m.remote===true?'selected':''}>対象（資料で確認済み）</option><option value="no" ${m.remote===false?'selected':''}>対象外（資料で確認済み）</option></select></label></div><details class="inline-details" ${m.sessions.length?'open':''}><summary>集中・隔週などの実施日時を手入力</summary><p style="margin:8px 0">入力すると、通常の自動展開に代えてこの日時で重複判定します。1行に日付・開始・終了を入力してください。</p><textarea id="dSessions" class="control" rows="4" placeholder="2026-10-01 09:00 10:30">${m.sessions.map(s=>`${s.date} ${s.start} ${s.end}`).join('\n')}</textarea></details><div id="dialogResult"></div><h3>科目・根拠</h3><dl class="meta-grid"><dt>科目ID</dt><dd>${c.id}（アプリ内の抽出ID）</dd><dt>履修可能年次</dt><dd>${E.minimumYear(c)}年次以降（${academicYearFor(m.year)}年次で計画）</dd><dt>科目表の配当</dt><dd>${esc(c.allocation_raw)} · ${esc(E.allocTerm(c))}</dd><dt>科目情報</dt><dd>${c.userEdited?'手入力の年度別科目設定':'情報科学部.pdf 印刷ページ'+c.source_printed_page}</dd><dt>授業形態・担当</dt><dd>${esc(o?.delivery||'未公表')} ${esc(o?.meetings?.[0]?.instructor_raw||'')}</dd><dt>日程の原表記</dt><dd>${esc(o?.schedule||o?.meetings?.map(x=>`${x.day}${x.period}限`).join('・')||'未確定')}</dd></dl>${DATA.syllabus_details_reviewed.find(d=>E.normalize(d.name)===E.normalize(c.name))?`<a class="small" href="${safeUrl(DATA.syllabus_details_reviewed.find(d=>E.normalize(d.name)===E.normalize(c.name)).url)}" target="_blank" rel="noopener">公開シラバス ↗</a>`:''}<details class="inline-details"><summary>同じ科目の公開シラバス一覧情報</summary>${DATA.syllabus_index_2026.filter(s=>s.catalog_candidate_id===c.id).map(s=>`<div>${esc(s.name)} · ${esc(s.opening_term_raw)} · ${s.credits}単位 · ${esc(s.eligible_year_raw)}</div>`).join('')||'一覧との対応は未確認です。'}</details></div><div class="dialog-footer"><div class="record-actions">${state.plans.some(p=>p.id===m.id)?`<button class="btn secondary small-btn" data-edit-definition="${esc(m.id)}">科目情報を編集</button><button class="btn danger small-btn" data-delete="${esc(m.id)}">時間割から削除</button>`:''}${m.mode==='history'&&state.history.some(h=>h.courseId===c.id)?'<button class="btn secondary" id="removeHistory">履修中に戻す</button>':'<span class="tiny muted">端末内に保存します</span>'}</div><button class="btn" id="saveCourse">${m.mode==='history'?'状態を保存':state.plans.some(p=>p.id===m.id)?'時間割を更新':'時間割に追加'}</button></div>`;renderDialogResult();
 }
 
-function dialogEvaluation(){return E.evaluate(dialogModel,state);}
+function dialogEvaluation(){const result=E.evaluate(dialogModel,state);if(dialogModel.requiredClassPending&&!dialogModel.offerId)result.errors.push('所属する開講クラスを選んでください。');return result;}
 
 function renderDialogResult(){
  let result;try{const sessions=parseSessions($('dSessions')?.value||'',dialogModel.year);dialogModel.sessions=sessions;result=dialogEvaluation();}catch(e){result={errors:[e.message],pending:[],notes:[],events:[]};}
@@ -656,7 +739,7 @@ function saveEditor(){
   const course={...(editorModel.original||{}),id:editorModel.id,name,category:$('eCategory').value,credits:Number($('eCredits').value),allocation_raw:String(minimum)+(['1Q','2Q','3Q','4Q'].includes(term)?'Q'+term[0]:{前期:'前',後期:'後',通年:'通'}[term]),required_for_all:$('eMandatory').checked,programs:programs($('ePrograms').value),required_in_programs:programs($('eRequiredPrograms').value),group_minimum_credits:editorModel.original?.group_minimum_credits||null,source_id:'U',userEdited:true};
   const offer={term,delivery,meetings:delivery==='オンデマンド'?[]:parseMeetings($('eMeetings').value,$('eInstructor').value),sessions:parseSessions($('eSessions').value,year),prerequisites,minimumYear:minimum,notes:[],selection:'設定した曜限',remote:null};
   E.upsertCourse(state,course,year,offer);refreshEngine();
-  for(const p of state.plans.filter(p=>p.courseId===course.id&&p.year>=year&&E.recordStatus(p,state)!=='earned')){const status=E.recordStatus(p,state),o=E.getOffers(courseAt(p.courseId,p.year),p.year,state)[0];p.term=o.term;p.offerId=o.id;p.tentativeMeetings=[];updateEnrollmentStatus(p,status);}
+  for(const p of state.plans.filter(p=>p.courseId===course.id&&p.year>=year&&E.recordStatus(p,state)!=='earned')){const status=E.recordStatus(p,state),o=E.getOffers(courseAt(p.courseId,p.year),p.year,state)[0];p.term=o.term;p.offerId=o.id;p.tentativeMeetings=[];delete p.requiredClassPending;updateEnrollmentStatus(p,status);}
   if(!editorModel.original){ui.year=year;ui.term=offer.term;ui.q=course.name;ui.category='';ui.delivery='';ui.filterTerm='';ui.filterYear='';ui.termOnly=false;ui.limit=18;state.catalogSettings={hideEarned:ui.hideEarned,term:'',year:''};}
   save();$('editorDialog').close();render();toast(editorModel.original?'年度別の科目情報を更新しました。':'科目を追加しました。');
  }catch(e){$('editorError').textContent=e.message;}
@@ -676,9 +759,15 @@ function putTimelineRecord(record, status) {
 }
 
 function removeTimelineRecord(plan) {
+  const key=plan.year+':'+plan.courseId;
+  if(E.isRequired(courseAt(plan.courseId,plan.year),state)&&!state.requiredAutofill.skipped.includes(key))state.requiredAutofill.skipped.push(key);
   state.plans = state.plans.filter(record => record.id !== plan.id);
   state.history = state.history.filter(record => record.courseId !== plan.courseId);
 }
+
+function setRequiredAutofill(enabled){state.requiredAutofill.enabled=enabled;save();render();}
+
+function restoreRequiredCourses(){state.requiredAutofill.skipped=state.requiredAutofill.skipped.filter(key=>!key.startsWith(ui.year+':'));state.requiredAutofill.enabled=true;save();render();toast('この年度で削除した必修科目を自動追加の対象に戻しました。');}
 
 function toggleEarnedStatus(id) {
   const plan = planById(id);
@@ -750,14 +839,17 @@ function updateDialogField(field, value) {
     const offer = offers.find(item => item.term === model.term) || offers[0];
     model.offerId = offer?.id || '';
     if (offer) model.term = offer.term;
+    delete model.requiredClassPending;
   }
   if (field === 'dTerm') {
     model.term = value;
     const offers = E.getOffers(courseAt(model.courseId, model.year), model.year, state);
     model.offerId = offers.find(offer => offer.term === model.term)?.id || '';
+    delete model.requiredClassPending;
   }
   if (field === 'dOffer') {
     model.offerId = value;
+    if(value)delete model.requiredClassPending;
     const offer = E.findOffer(model, state);
     if (offer) {
       model.term = offer.term;
@@ -855,6 +947,8 @@ function dispatch(routes, target) {
 }
 
 const clickRoutes = [
+  {matches:target=>target.id==='addOnDemand',run:()=>openOnDemandSlot()},
+  {matches:target=>target.id==='restoreRequiredCourses',run:()=>restoreRequiredCourses()},
   {
     matches: target => target.id==='addCatalogCourse',
     run: function onAddCatalogCourse(target) {
@@ -1032,6 +1126,7 @@ const clickRoutes = [
 ];
 
 const changeRoutes = [
+  {matches:target=>target.id==='autoRequiredEnabled',run:target=>setRequiredAutofill(target.checked)},
   {
     matches: target => target.id==='manageYear',
     run: async function onManageYear(target) {
@@ -1188,7 +1283,7 @@ render();
     <p class="small muted pwa-storage">計画と履修履歴はこの端末に保存されます。ブラウザのデータ削除などに備え、ときどき「書き出す」でバックアップしてください。</p>
     <p class="small pwa-update-message" id="pwaUpdateMessage" role="status" aria-live="polite"></p>
     <div class="pwa-controls"><button class="btn secondary small-btn" id="pwaCheckUpdate" type="button">更新を確認</button><button class="btn small-btn" id="pwaUpdate" type="button" hidden>更新して再起動</button></div>
-    <p class="tiny muted pwa-version">PWA 1.0.0</p>
+    <p class="tiny muted pwa-version">PWA 1.1.0</p>
   </div>
 </dialog>
 <div class="pwa-update-notice" id="pwaUpdateNotice" role="status" hidden>新しいバージョンを利用できます。<button id="pwaShowUpdate" type="button">更新を確認</button></div>

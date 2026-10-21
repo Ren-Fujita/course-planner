@@ -1,0 +1,21 @@
+[
+  "app/state.js",
+  "app/render-cache.js",
+  "ui/common.js",
+  "app/selectors.js",
+  "ui/planning-additions.js",
+  "ui/timetable.js",
+  "ui/progress.js",
+  "ui/history.js",
+  "ui/catalog.js",
+  "ui/management.js",
+  "ui/data.js",
+  "ui/course-dialog.js",
+  "ui/course-editor.js",
+  "app/mutations.js",
+  "app/imports.js",
+  "app/actions.js",
+  "app/files.js",
+  "app/events.js",
+  "app/start.js"
+]

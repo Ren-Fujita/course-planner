@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>履修プラン｜情報科学部 2026</title>
+<style>
+__STYLES__
+</style><style id="planningStyle">__PLANNING_STYLES__</style></head>
+<body>
+<aside class="sidebar">
+ <div class="brand"><div class="brand-mark" aria-hidden="true">▦</div><div><strong>履修プラン</strong><span>YOUR PATH TO GRADUATION</span></div></div>
+ <div class="cohort">周南公立大学<b>情報科学部 · 2026年度入学</b></div>
+ <nav aria-label="メインメニュー" id="nav"></nav>
+ <div class="side-bottom"><div class="eyebrow" style="color:#a2c1bf">GRADUATION PROGRESS</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:8px"><strong id="sideCredits" style="font-size:28px">0</strong><span class="tiny" style="color:#a6c3c6">/ 124 単位 修得済み</span></div><div class="side-progress"><span id="sideBar"></span></div><p class="tiny" style="color:#adcbca" id="sideProgram">プログラム未選択</p><div class="side-footer">ログインなし・端末内に保存<br>オフラインで利用できます</div></div>
+</aside>
+<div class="app"><header class="topbar"><div class="breadcrumb">2026年度入学生 <span>/</span><span id="crumb">履修計画</span></div><div class="mobile-brand">▦ 履修プラン</div><div class="top-actions"><span class="save-state" id="saveState"><i class="dot"></i>端末保存</span><button class="link-btn" id="exportBtn">書き出す</button><button class="link-btn" id="importBtn">読み込む</button></div></header><nav class="mobile-nav" id="mobileNav" aria-label="メインメニュー"></nav><main class="content" id="main"></main></div>
+<dialog class="dialog" id="courseDialog" aria-labelledby="dialogTitle"><div id="dialogContent"></div></dialog>
+<dialog class="dialog" id="confirmDialog" aria-labelledby="confirmTitle"><div class="dialog-header"><h2 id="confirmTitle">確認</h2></div><div class="dialog-body" id="confirmMessage"></div><div class="dialog-footer"><button class="btn secondary" id="cancelConfirm">キャンセル</button><button class="btn" id="acceptConfirm">実行</button></div></dialog>
+<dialog class="dialog slot-dialog" id="slotDialog" aria-labelledby="slotTitle"><div id="slotContent"></div></dialog>
+<dialog class="dialog" id="editorDialog" aria-labelledby="editorTitle"><div id="editorContent"></div></dialog>
+<input id="importFile" type="file" accept=".json,application/json" hidden><input id="scheduleFile" type="file" accept=".json,application/json" hidden><div id="toast" class="toast" role="status" hidden></div>
+<script id="courseData" type="application/json">__DATA__</script>
+<script>__ENGINE__</script>
+<script>__PERSISTENCE__</script>
+<script>__APP__</script>
+</body></html>

@@ -1,0 +1,19 @@
+<dialog class="dialog pwa-dialog" id="pwaDialog" aria-labelledby="pwaTitle">
+  <div class="dialog-header"><div><p class="eyebrow">YOUR PLAN, ANYWHERE</p><h2 id="pwaTitle">履修プランをアプリに</h2></div><button class="link-btn" type="button" id="pwaClose" aria-label="アプリの案内を閉じる">閉じる</button></div>
+  <div class="dialog-body">
+    <div class="pwa-intro"><img src="./icons/icon-192.png" width="56" height="56" alt=""><p>ホーム画面からすぐに起動。<br>初回の保存完了後は、オフラインでも使えます。</p></div>
+    <p class="pwa-status" id="pwaStatus" role="status" aria-live="polite">オフラインの準備状況を確認中です。</p>
+    <p class="small muted" id="pwaConnection" role="status" aria-live="polite"></p>
+    <button class="btn pwa-install" id="pwaInstall" type="button" hidden>アプリをインストール</button>
+    <div id="pwaInstructions">
+      <h3>iPhone・iPad</h3><p class="small">Safariで公開URLを開き、共有メニューから「ホーム画面に追加」を選びます。「Webアプリとして開く」が表示された場合はオンにしてください。</p>
+      <h3>Android・パソコン</h3><p class="small">Chrome・Edgeのメニューから「アプリをインストール」または「ホーム画面に追加」を選びます。表示名はブラウザにより異なります。</p>
+    </div>
+    <h3>これまでの計画を引き継ぐ</h3><p class="small">元のHTMLで「書き出す」を押し、このアプリで「読み込む」からJSONを選んでください。保存場所やURLが変わると、端末内データは自動で移りません。iPhone・iPadでもインストール後に計画を確認し、必要なら同じJSONを読み込んでください。</p>
+    <p class="small muted pwa-storage">計画と履修履歴はこの端末に保存されます。ブラウザのデータ削除などに備え、ときどき「書き出す」でバックアップしてください。</p>
+    <p class="small pwa-update-message" id="pwaUpdateMessage" role="status" aria-live="polite"></p>
+    <div class="pwa-controls"><button class="btn secondary small-btn" id="pwaCheckUpdate" type="button">更新を確認</button><button class="btn small-btn" id="pwaUpdate" type="button" hidden>更新して再起動</button></div>
+    <p class="tiny muted pwa-version">PWA __PWA_VERSION__</p>
+  </div>
+</dialog>
+<div class="pwa-update-notice" id="pwaUpdateNotice" role="status" hidden>新しいバージョンを利用できます。<button id="pwaShowUpdate" type="button">更新を確認</button></div>
