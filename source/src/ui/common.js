@@ -2,9 +2,10 @@ const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,
 const pct=(a,b)=>Math.min(100,Math.max(0,a/b*100));
 const uid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
 const navItems=[['plan','calendar','履修計画'],['roadmap','route','卒業までの計画'],['progress','chart','卒業要件・比較'],['history','check','履修履歴'],['manage','book','科目管理'],['data','book','資料・データ']];
-const compatible=(t,selected)=>selected==='通年'||t==='通年'||t===selected||(E.SEM(t)===selected)||(t===E.SEM(selected));
+const compatible=(t,selected)=>t==='通年'||t===selected||(!['前期','後期','通年'].includes(selected)&&t===E.SEM(selected));
 const courseColor=c=>c.category.startsWith('DS')?'ds':c.category.startsWith('IE')?'ie':c.category.startsWith('BA')?'ba':'';
 const creditText=c=>c.name==='ビジネス英作文'&&!c.userEdited?'1〜2単位（未確定）':`${c.credits}単位`;
+const courseCategory=c=>`<span class="lesson-category">${esc(c.category)}</span>`;
 const PLANNING_MONTHS = {"1Q":"04","2Q":"06","前期":"04","3Q":"10","4Q":"12","後期":"10","通年":"04"};
 
 // ui/common.js
@@ -35,7 +36,7 @@ function recordTag(p){const s=E.recordStatus(p,state);return s==='earned'?'<span
 
 function earnedButton(p,compact=false){const earned=E.recordStatus(p,state)==='earned';return `<button class="${compact?'lesson-state-btn':'btn secondary small-btn'}" data-toggle-earned="${esc(p.id)}" aria-label="${esc(courseAt(p.courseId,p.year).name)}を${earned?'履修中に戻す':'修得済みにする'}">${earned?'✓ 修得済み（戻す）':'修得済みにする'}</button>`;}
 
-function planRow(p){const c=courseAt(p.courseId,p.year),r=evaluationFor(p),o=E.findOffer(p,state);return `<div class="plan-row"><span class="status-mark ${E.recordStatus(p,state)==='earned'?'checked':r.status}" aria-hidden="true"></span><div class="plan-title"><button data-edit="${esc(p.id)}">${esc(c.name)}</button><div class="small muted">${esc(p.term)} · ${esc(p.requiredClassPending?'クラス未選択':o?.label||'日時未確定')} · ${creditText(c)}</div></div><div class="record-actions">${recordTag(p)}${earnedButton(p)}<button class="btn secondary small-btn" data-edit-definition="${esc(p.id)}">科目編集</button><button class="btn danger small-btn" data-delete="${esc(p.id)}">削除</button></div></div>`;}
+function planRow(p){const c=courseAt(p.courseId,p.year),r=evaluationFor(p),o=E.findOffer(p,state);return `<div class="plan-row"><span class="status-mark ${E.recordStatus(p,state)==='earned'?'checked':r.status}" aria-hidden="true"></span><div class="plan-title"><button data-edit="${esc(p.id)}">${esc(c.name)}</button>${courseCategory(c)}<div class="small muted">${esc(p.term)} · ${esc(p.requiredClassPending?'クラス未選択':o?.label||'日時未確定')} · ${creditText(c)}</div></div><div class="record-actions">${recordTag(p)}${earnedButton(p)}<button class="btn secondary small-btn" data-edit-definition="${esc(p.id)}">科目編集</button><button class="btn danger small-btn" data-delete="${esc(p.id)}">削除</button></div></div>`;}
 
 function safeUrl(s){try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?esc(u.href):'#';}catch{return '#';}}
 

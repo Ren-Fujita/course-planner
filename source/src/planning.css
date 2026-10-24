@@ -2,3 +2,8 @@
 @media(max-width:700px){.on-demand-section{padding:16px}.on-demand-list{grid-template-columns:1fr 1fr;gap:8px}.on-demand-list .lesson{padding:9px 7px}.on-demand-section .btn{white-space:nowrap}.required-controls{padding:12px 15px;gap:7px}.required-controls>.tiny{flex-basis:100%;font-size:10px}.required-controls .link-btn{margin-left:0}.required-notice{font-size:11px}}
 @media(max-width:360px){.on-demand-list{grid-template-columns:1fr}}
 @media print{.required-controls,.required-notice,.on-demand-section .btn,.on-demand-section .lesson-state-btn,.on-demand-section .lesson-actions{display:none!important}.on-demand-section{background:white}.on-demand-list{grid-template-columns:repeat(3,1fr)}.on-demand-section .lesson{display:block}}
+
+.lesson-category{display:block;font-size:10px;line-height:1.5;color:#47665f;margin:3px 0;overflow-wrap:anywhere}.lesson .lesson-category{font-size:10px;color:#47665f}.plan-title .lesson-category{font-size:10px}.required-controls .btn{white-space:nowrap}
+.weekly .lesson-wrap~.slot-add{display:none}
+.workspace:not(.show-course-actions) .lesson-state-btn,.workspace:not(.show-course-actions) .lesson-actions,.workspace:not(.show-course-actions) .plan-row .record-actions .btn{display:none}
+@media print{.weekly .lesson-state-btn,.weekly .lesson-actions{display:none!important}}

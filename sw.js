@@ -1,7 +1,7 @@
 'use strict';
 
 // Generated from every shipped app asset. Rebuilding changes this revision.
-const REVISION = '1.1.0-42451327378a';
+const REVISION = '1.2.2-9976a74c8cc6';
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'shunan-course-planner:' + encodeURIComponent(BASE.pathname) + ':';
 const CACHE = PREFIX + REVISION;

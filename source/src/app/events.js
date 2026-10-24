@@ -6,7 +6,7 @@ function dispatch(routes, target) {
 
 const clickRoutes = [
   {matches:target=>target.id==='addOnDemand',run:()=>openOnDemandSlot()},
-  {matches:target=>target.id==='restoreRequiredCourses',run:()=>restoreRequiredCourses()},
+  {matches:target=>target.id==='addRequiredCourses',run:()=>addRequiredCourses()},
   {
     matches: target => target.id==='addCatalogCourse',
     run: function onAddCatalogCourse(target) {
@@ -184,7 +184,7 @@ const clickRoutes = [
 ];
 
 const changeRoutes = [
-  {matches:target=>target.id==='autoRequiredEnabled',run:target=>setRequiredAutofill(target.checked)},
+  {matches:target=>target.id==='showCourseActions',run:target=>setCourseActionsVisibility(target.checked)},
   {
     matches: target => target.id==='manageYear',
     run: async function onManageYear(target) {

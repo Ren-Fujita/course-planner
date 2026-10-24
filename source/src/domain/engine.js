@@ -7,7 +7,7 @@ const normalize=s=>String(s||'').normalize('NFKC').replace(/[\s・、,（）()�
 const uniq=a=>[...new Set(a)];
 const sum=a=>a.reduce((s,x)=>s+x,0);
 const allocTerm=c=>c.allocation_raw.includes('Q1+Q2+Q3+Q4')||c.allocation_raw.includes('通')?'通年':c.allocation_raw.includes('Q1+Q2')?'前期':c.allocation_raw.includes('Q3+Q4')?'後期':c.allocation_raw.includes('Q')?(c.allocation_raw.match(/Q([1-4])/)?.[1]||'1')+'Q':c.allocation_raw.includes('前')?'前期':'後期';
-const initial=()=>({kind:'shunan-course-plan',version:1,cohort:2026,plans:[],history:[],programs:[],academicYears:{},graduationYear:2029,thesisSubmitted:false,thesisPassed:false,residenceConfirmed:false,customCourses:[],courseVersions:[],catalogSettings:{hideEarned:true,term:'',year:''},requiredAutofill:{enabled:true,skipped:[]},packs:[],updatedAt:null});
+const initial=()=>({kind:'shunan-course-plan',version:1,cohort:2026,plans:[],history:[],programs:[],academicYears:{},graduationYear:2029,thesisSubmitted:false,thesisPassed:false,residenceConfirmed:false,customCourses:[],courseVersions:[],catalogSettings:{hideEarned:true,term:'',year:''},requiredAutofill:{enabled:true,skipped:[]},displaySettings:{showCourseActions:false},packs:[],updatedAt:null});
 const minutes=t=>Number(t.split(':')[0])*60+Number(t.split(':')[1]);
 const overlaps=(a,b)=>a.date===b.date&&minutes(a.start)<minutes(b.end)&&minutes(b.start)<minutes(a.end);
 const validDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
@@ -244,6 +244,7 @@ function createEngine(data,config={}){
   if(!Array.isArray(x.programs)||x.programs.some(p=>!['DS','IE','BA'].includes(p)))throw Error('プログラムが不正です。');
   if(!x.academicYears||Object.values(x.academicYears).some(y=>!Number.isInteger(y)||y<1||y>4)||!Number.isInteger(x.graduationYear)||x.graduationYear<2029||x.graduationYear>2040)throw Error('年次・卒業予定年度が不正です。');
   if(!x.catalogSettings||typeof x.catalogSettings.hideEarned!=='boolean'||!['',...TERMS].includes(x.catalogSettings.term)||!['','1','2','3','4'].includes(String(x.catalogSettings.year)))throw Error('検索設定が不正です。');
+  if(!x.displaySettings||typeof x.displaySettings.showCourseActions!=='boolean')throw Error('表示設定が不正です。');
   const autofill=x.requiredAutofill;
   if(!autofill||typeof autofill.enabled!=='boolean'||!Array.isArray(autofill.skipped)||autofill.skipped.length>3000||autofill.skipped.some(key=>{if(typeof key!=='string')return true;const [year,id,...extra]=key.split(':');return extra.length||!/^\d{4}$/.test(year)||Number(year)<2026||Number(year)>2040||!known.has(id);}))throw Error('必修の自動追加設定が不正です。');
   if(x.plans.some(p=>p.requiredClassPending!=null&&typeof p.requiredClassPending!=='boolean'))throw Error('開講クラスの選択状態が不正です。');
@@ -254,7 +255,7 @@ function createEngine(data,config={}){
 
  function autofillRequired(state,year){
   const result={added:[],blocked:[]};
-  if(!state.requiredAutofill?.enabled)return result;
+  // Explicit action: legacy enabled/disabled preferences never trigger this operation.
   const grade=Number(state.academicYears[year]||Math.min(4,year-2025));
   const skipped=new Set(state.requiredAutofill.skipped);
   for(const c of catalogFor(year,state).filter(c=>isRequired(c,state)&&minimumYear(c)===grade)){

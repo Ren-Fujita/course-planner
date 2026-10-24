@@ -40,6 +40,7 @@ let slotModel = null;
 let editorModel = null;
 let confirmAction = null;
 let toastTimer;
+const requiredAdditionResults=new Map();
 
 function refreshEngine() {
   E = persistence.refresh(state);

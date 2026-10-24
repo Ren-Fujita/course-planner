@@ -1,4 +1,6 @@
 // All enrollment writes go through the same rule-engine operation.
+function setCourseActionsVisibility(visible){state.displaySettings.showCourseActions=visible;if(!(persistence.initializationFailed&&storageError))save();render();}
+
 function updateEnrollmentStatus(plan, status) {
   E.setRecordStatus(state, plan, status);
 }
@@ -15,9 +17,16 @@ function removeTimelineRecord(plan) {
   state.history = state.history.filter(record => record.courseId !== plan.courseId);
 }
 
-function setRequiredAutofill(enabled){state.requiredAutofill.enabled=enabled;save();render();}
-
-function restoreRequiredCourses(){state.requiredAutofill.skipped=state.requiredAutofill.skipped.filter(key=>!key.startsWith(ui.year+':'));state.requiredAutofill.enabled=true;save();render();toast('この年度で削除した必修科目を自動追加の対象に戻しました。');}
+function addRequiredCourses(){
+ if(persistence.initializationFailed&&storageError){toast('保存データを復元できていないため、必修を追加できません。計画ファイルを読み込んでから実行してください。',true);return;}
+ const previousSkipped=state.requiredAutofill.skipped.length;
+ state.requiredAutofill.skipped=state.requiredAutofill.skipped.filter(key=>!key.startsWith(ui.year+':'));
+ const result=E.autofillRequired(state,ui.year);
+ requiredAdditionResults.set(ui.year,result);
+ if(result.added.length||state.requiredAutofill.skipped.length!==previousSkipped)save();
+ render();
+ toast(result.added.length?`${result.added.length}科目の必修を追加しました。${result.blocked.length?'追加できない科目は画面で確認してください。':''}`:result.blocked.length?'追加できない必修があります。画面の理由を確認してください。':'この年度の必修はすでに登録されています。');
+}
 
 function toggleEarnedStatus(id) {
   const plan = planById(id);

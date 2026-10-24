@@ -8,9 +8,10 @@ const data=require('../data/courses.json');
 const runtime=loadRuntime();
 const KEY='shunan-course-planner-2026-v1';
 const app=(saved=new Map())=>createHarness(runtime,saved);
+const filledApp=(saved=new Map())=>{const a=app(saved);a.read('addRequiredCourses()');return a;};
 
-test('初回は全員必修を配当年次の年度へ配置し、単位は修得済みにしない',()=>{
- const a=app();
+test('ボタンで全員必修を配当年次の年度へ配置し、単位は修得済みにしない',()=>{
+ const a=filledApp();
  assert.equal(a.read('state.requiredAutofill.enabled'),true);
  assert.equal(a.read('state.plans.length'),15);
  for(const id of ['C033','C037','C049','C055','C059'])assert(a.read(`state.plans.some(p=>p.courseId==='${id}'&&p.year===2026)`));
@@ -26,7 +27,7 @@ test('必修の重複を作らず、既存の年度・クラス・修得状態�
  await manual.click('',{toggleEarned:manual.read('state.plans[0].id')});
  const saved=JSON.parse(manual.saved.get(KEY));
  delete saved.requiredAutofill;
- const a=app(new Map([[KEY,JSON.stringify(saved)]]));
+ const a=filledApp(new Map([[KEY,JSON.stringify(saved)]]));
  assert.equal(a.read("state.plans.filter(p=>p.courseId==='C055').length"),1);
  assert.equal(a.read("state.history.find(h=>h.courseId==='C055').status"),'earned');
  assert.equal(a.read('E.progress(state).total'),2);
@@ -35,9 +36,9 @@ test('必修の重複を作らず、既存の年度・クラス・修得状態�
  assert.equal(b.read("state.history.find(h=>h.courseId==='C055').status"),'earned');
 });
 
-test('表示年次を変えると対応する必修を追加し、以前の年度を保持する',async()=>{
- const a=app();const count=a.read('state.plans.length');
- await a.change('academicYear','2');
+test('表示年次を変えてボタンを押すと対応する必修を追加し、以前の年度を保持する',async()=>{
+ const a=filledApp();const count=a.read('state.plans.length');
+ await a.change('academicYear','2');await a.click('addRequiredCourses');
  assert(a.read("state.plans.some(p=>p.courseId==='C061'&&p.year===2027)"));
  assert.equal(a.read('state.plans.filter(p=>p.year===2026).length'),count);
  await a.change('academicYear','1');await a.change('academicYear','2');
@@ -46,33 +47,32 @@ test('表示年次を変えると対応する必修を追加し、以前の年�
 
 test('選択したプログラムだけの必修を配当年次で追加する',async()=>{
  const a=app();const input=a.get('goal');input.dataset={program:'DS'};
- await a.change('goal','',true);
+ await a.change('goal','',true);await a.click('addRequiredCourses');
  assert(a.read("state.plans.some(p=>p.courseId==='C075'&&p.year===2026)"));
  assert(!a.read("state.plans.some(p=>p.courseId==='C089'||p.courseId==='C102')"));
- await a.change('academicYear','2');
+ await a.change('academicYear','2');await a.click('addRequiredCourses');
  for(const id of ['C076','C077','C078'])assert(a.read(`state.plans.some(p=>p.courseId==='${id}'&&p.year===2027)`));
 });
 
 test('削除した必修は再起動しても戻らず、戻す操作で再配置できる',async()=>{
- const a=app();const id=a.read("state.plans.find(p=>p.courseId==='C055').id");
+ const a=filledApp();const id=a.read("state.plans.find(p=>p.courseId==='C055').id");
  await a.click('',{delete:id});await a.click('acceptConfirm');
  assert(!a.read("state.plans.some(p=>p.courseId==='C055')"));
  const b=app(a.saved);assert(!b.read("state.plans.some(p=>p.courseId==='C055')"));
- await b.click('restoreRequiredCourses');
+ await b.click('addRequiredCourses');
  assert.equal(b.read("state.plans.filter(p=>p.courseId==='C055').length"),1);
 });
 
-test('自動追加をオフにしても既存の計画を残し、次の年度は自動追加しない',async()=>{
- const a=app();const count=a.read('state.plans.length');
- await a.change('autoRequiredEnabled','',false);
+test('ボタンを押さずに次の年度へ移っても計画を追加しない',async()=>{
+ const a=filledApp();const count=a.read('state.plans.length');
  await a.change('academicYear','2');
  assert.equal(a.read('state.plans.length'),count);
  assert(!a.read('state.plans.some(p=>p.year===2027)'));
- const b=app(a.saved);assert.equal(b.read('state.requiredAutofill.enabled'),false);
+ const b=app(a.saved);assert.equal(b.read('state.plans.length'),count);
 });
 
 test('複数クラスの必修は共通枠を仮置きし、クラス選択後に確定する',async()=>{
- const a=app();const id=a.read("state.plans.find(p=>p.courseId==='C030').id");
+ const a=filledApp();const id=a.read("state.plans.find(p=>p.courseId==='C030').id");
  assert.equal(a.read(`state.plans.find(p=>p.id==='${id}').offerId`),'');
  assert.equal(a.read(`state.plans.find(p=>p.id==='${id}').requiredClassPending`),true);
  assert(a.read(`state.plans.find(p=>p.id==='${id}').tentativeMeetings.some(m=>m.day==='水'&&m.period===3)`));
@@ -85,7 +85,7 @@ test('複数クラスの必修は共通枠を仮置きし、クラス選択後�
 });
 
 test('先修条件を満たさない必修は自動登録せず、理由を表示する',async()=>{
- const a=app();await a.change('academicYear','3');await a.change('planTerm','1Q');
+ const a=filledApp();await a.change('academicYear','3');await a.change('planTerm','1Q');await a.click('addRequiredCourses');
  assert(!a.read("state.plans.some(p=>p.courseId==='C117')"));
  assert(a.get('main').innerHTML.includes('自動追加できない必修'));
  assert(a.get('main').innerHTML.includes('プログラムの必修'));
@@ -116,7 +116,7 @@ test('オンデマンド欄から追加・修得済みへの変更・削除が�
 });
 
 test('必修オンデマンドは自動で新設欄に入り、重複追加の候補を無効にする',async()=>{
- const a=app();assert(a.read('onDemandPlans().some(p=>p.courseId==="C055")'));
+ const a=filledApp();assert(a.read('onDemandPlans().some(p=>p.courseId==="C055")'));
  await a.click('addOnDemand');
  assert(a.get('slotChoices').innerHTML.includes('disabled title="時間割に登録済みです"'));
  const count=a.read('state.plans.length');
@@ -167,7 +167,7 @@ test('クラス未選択の必修でも共通する実施日との衝突を禁�
 });
 
 test('クラス未選択の必修を科目編集でオンデマンドに変えると新設欄へ移る',async()=>{
- const a=app();await a.change('planTerm','1Q');
+ const a=filledApp();await a.change('planTerm','1Q');
  const id=a.read("state.plans.find(p=>p.courseId==='C030').id");
  await a.click('',{editDefinition:id});a.get('eDelivery').value='オンデマンド';
  await a.click('saveEditor');
