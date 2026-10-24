@@ -10,6 +10,7 @@ test('手動モードの22通りの既存操作・表示を保持する（新設
   const after = await captureScenarios(loadRuntime());
   for (const name of Object.keys(before)) {
     after[name].main=after[name].main.replace(/<span class="lesson-category">[\s\S]*?<\/span>/g,'').replace(/<!--planning-addition:start-->[\s\S]*?<!--planning-addition:end-->/g,'');
+    after[name].slot=after[name].slot.replace(/<span class="lesson-category">[\s\S]*?<\/span>/g,'');
     delete after[name].state.requiredAutofill;
     delete after[name].state.displaySettings;
     assert.deepEqual(after[name], before[name], name);
